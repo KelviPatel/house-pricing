@@ -5,7 +5,7 @@ name: Deploy Python App to AWS EC2
 on:
   push:
     branches:
-      - main  # Trigger deployment on push to the main branch
+      - main
 
 jobs:
   deploy:
@@ -16,48 +16,44 @@ jobs:
       uses: actions/checkout@v4
 
     - name: 2. Setup SSH Key
-      # This action securely loads the SSH key from secrets and configures ssh-agent.
-      # It's the standard and most reliable way to handle SSH keys in GitHub Actions.
       uses: webfactory/ssh-agent@v0.9.0
       with:
         ssh-private-key: ${{ secrets.EC2_KEY }}
 
     - name: 3. Deploy to EC2 and Restart App
-      # This step connects to the EC2 instance and performs the deployment.
       run: |
-        # Add the EC2 host's public key to the runner's known_hosts file
-        # to avoid the interactive "Are you sure you want to continue connecting?" prompt.
         ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
-        # Use rsync to efficiently transfer the application files.
-        # It's faster than scp as it only copies changed files.
-        # The user, host, and path are all from secrets for security and flexibility.
-        rsync -avz --exclude '.git' --exclude '.github' . ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:${{ secrets.DEPLOY_PATH }}
+        rsync -avz --exclude '.git' --exclude '.github' --exclude 'venv' . ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:${{ secrets.DEPLOY_PATH }}
 
-        # SSH into the EC2 instance to run deployment commands.
-        # The 'EOF' heredoc allows us to run a multi-line script on the remote server.
-        # Note: We use "EOF" without quotes to allow ${{ secrets.DEPLOY_PATH }} to be expanded by GitHub Actions.
-        ssh ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} << EOF
-          set -e  # Exit immediately if a command exits with a non-zero status.
+        ssh ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} << 'EOF'
+          set -e # Exit immediately if a command fails
 
           # Navigate to the deployment directory
           cd ${{ secrets.DEPLOY_PATH }}
 
-          # Kill any old running instance of the app to prevent conflicts.
-          # The 'pkill -f' command finds the process by its full command line.
-          # '|| true' ensures that the script doesn't fail if the process isn't found (e.g., on the first deploy).
+          # === START: PYTHON VIRTUAL ENVIRONMENT SETUP ===
+          # Check if the virtual environment directory exists. If not, create it.
+          # This makes subsequent deployments faster.
+          if [ ! -d "venv" ]; then
+            echo "Creating Python virtual environment..."
+            python3 -m venv venv
+          fi
+
+          echo "Activating virtual environment and installing dependencies..."
+          # Instead of `pip3`, we now use the pip from our virtual environment.
+          # This installs packages into venv/lib/pythonX.X/site-packages/ instead of the global scope.
+          ./venv/bin/pip install -r requirements.txt
+          # === END: PYTHON VIRTUAL ENVIRONMENT SETUP ===
+
+          # Kill any old running instance of the app.
+          # We now target the python executable inside our venv for more accuracy.
           echo "Stopping old application process..."
-          pkill -f 'python3 app.py' || true
+          pkill -f "${{ secrets.DEPLOY_PATH }}/venv/bin/python app.py" || true
 
-          # Install/update Python dependencies
-          echo "Installing dependencies..."
-          pip3 install -r requirements.txt
-
-          # Start the application in the background using nohup
-          # This ensures the process keeps running even after the SSH session ends.
-          # Output is redirected to output.log for debugging.
+          # Start the application using the python from our virtual environment
           echo "Starting new application process..."
-          nohup python3 app.py > output.log 2>&1 &
+          nohup ./venv/bin/python app.py > output.log 2>&1 &
 
           echo "Deployment successful!"
         EOF

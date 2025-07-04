@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 
 app=Flask(__name__)
+# model loading from pkl files
 model=pickle.load(open('regmodel.pkl','rb'))
 scalar=pickle.load(open('scaling.pkl','rb'))
 

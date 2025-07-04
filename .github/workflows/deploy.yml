@@ -24,31 +24,34 @@ jobs:
       run: |
         ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
-        # === FIX: CREATE DEPLOYMENT DIRECTORY ===
-        # Create the deployment directory on the server if it doesn't exist.
-        # The 'mkdir -p' command creates parent directories as needed and doesn't fail if the directory already exists.
-        ssh ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} "mkdir -p ${{ secrets.DEPLOY_PATH }}"
-
-        # Now that the directory is guaranteed to exist, run rsync.
         rsync -avz --exclude '.git' --exclude '.github' --exclude 'venv' . ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:${{ secrets.DEPLOY_PATH }}
 
-        # The rest of the script remains the same.
         ssh ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} << 'EOF'
           set -e # Exit immediately if a command fails
 
+          # Navigate to the deployment directory
           cd ${{ secrets.DEPLOY_PATH }}
 
+          # === START: PYTHON VIRTUAL ENVIRONMENT SETUP ===
+          # Check if the virtual environment directory exists. If not, create it.
+          # This makes subsequent deployments faster.
           if [ ! -d "venv" ]; then
             echo "Creating Python virtual environment..."
             python3 -m venv venv
           fi
 
           echo "Activating virtual environment and installing dependencies..."
+          # Instead of `pip3`, we now use the pip from our virtual environment.
+          # This installs packages into venv/lib/pythonX.X/site-packages/ instead of the global scope.
           ./venv/bin/pip install -r requirements.txt
+          # === END: PYTHON VIRTUAL ENVIRONMENT SETUP ===
 
+          # Kill any old running instance of the app.
+          # We now target the python executable inside our venv for more accuracy.
           echo "Stopping old application process..."
           pkill -f "${{ secrets.DEPLOY_PATH }}/venv/bin/python app.py" || true
 
+          # Start the application using the python from our virtual environment
           echo "Starting new application process..."
           nohup ./venv/bin/python app.py > output.log 2>&1 &
 

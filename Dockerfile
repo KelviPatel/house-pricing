@@ -1,6 +1,16 @@
 FROM python:3.12
-COPY . /app
+
+# Set working directory
 WORKDIR /app
-RUN pip install -r requiremets.txt
-EXPOSE $PORT
-CMD gunicorn --worker=4 --bind 0.0.0.0:$PORT app:app
+
+# Copy all project files
+COPY . /app
+
+# Install dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Expose port (match what's used in app.py)
+EXPOSE 8000
+
+# Run the app
+CMD ["python", "app.py"]

@@ -1,0 +1,30 @@
+name: Deploy to AWS EC2
+
+on:
+  push:
+    branches:
+      - main  # or your deploy branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+
+    - name: Setup SSH
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.EC2_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
+    - name: Deploy to EC2
+      run: |
+        rsync -avz --exclude '.git' . ${{ secrets.EC2_HOST }}:${{ secrets.DEPLOY_PATH }}
+        ssh ${{ secrets.EC2_HOST }} << 'EOF'
+          cd ${{ secrets.DEPLOY_PATH }}
+          pip3 install -r requirements.txt
+          nohup python3 app.py > output.log 2>&1 &
+        EOF

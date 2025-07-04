@@ -58,7 +58,7 @@ jobs:
           ls -l ./venv/bin/pip || echo "Pip missing!"
 
           echo "Installing requirements..."
-          ./venv/bin/pip install -r requirements.txt
+          ./venv/bin/pip install -r requiremets.txt
 
           # === END: PYTHON VIRTUAL ENVIRONMENT SETUP ===
 

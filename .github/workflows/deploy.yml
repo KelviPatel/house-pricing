@@ -42,8 +42,24 @@ jobs:
             ./venv/bin/python get-pip.py
           fi
 
-          echo "Activating virtual environment and installing dependencies..."
-          /pip install -r requirements.txt
+          cd ${{ secrets.DEPLOY_PATH }}
+
+          echo "Cleaning old venv if exists..."
+          rm -rf venv
+
+          echo "Creating new virtual environment..."
+          python3 -m venv venv
+
+          echo "Installing pip..."
+          curl -sS https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+          ./venv/bin/python get-pip.py
+
+          echo "Checking if pip exists..."
+          ls -l ./venv/bin/pip || echo "Pip missing!"
+
+          echo "Installing requirements..."
+          ./venv/bin/pip install -r requirements.txt
+
           # === END: PYTHON VIRTUAL ENVIRONMENT SETUP ===
 
 

@@ -3,7 +3,8 @@ name: Deploy to AWS EC2
 on:
   push:
     branches:
-      - main  # or your deploy branch
+      - main  
+
 
 jobs:
   deploy:
@@ -13,12 +14,19 @@ jobs:
     - name: Checkout Code
       uses: actions/checkout@v3
 
+    - name: Debug values
+      run: |
+        echo "EC2_HOST = ${{ secrets.EC2_HOST }}"
+        host="${{ secrets.EC2_HOST#*@ }}"
+        echo "Host for keyscan = $host"
+
     - name: Setup SSH
       run: |
         mkdir -p ~/.ssh
         echo "${{ secrets.EC2_KEY }}" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
-        ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+        host="${{ secrets.EC2_HOST#*@ }}"
+        ssh-keyscan -H "$host" >> ~/.ssh/known_hosts
 
     - name: Deploy to EC2
       run: |

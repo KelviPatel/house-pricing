@@ -45,7 +45,7 @@ jobs:
           cd ${{ secrets.DEPLOY_PATH }}
 
           echo "Cleaning old venv if exists..."
-          rm -rf venv
+          rm -rf venv || True
 
           echo "Creating new virtual environment..."
           python3 -m venv venv

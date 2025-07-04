@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 app=Flask(__name__)
-# model 
+# model loading
 model=pickle.load(open('regmodel.pkl','rb'))
 scalar=pickle.load(open('scaling.pkl','rb'))
 

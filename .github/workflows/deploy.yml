@@ -24,7 +24,7 @@ jobs:
       run: |
         rsync -avz --exclude '.git' . ${{ secrets.EC2_HOST }}:${{ secrets.DEPLOY_PATH }}
         ssh ${{secrets.EC2_HOST}} << 'EOF'
-          cd ${{secrets.DEPLOY_PATH}}
+          cd ${{ secrets.DEPLOY_PATH} }
           pip3 install -r requirements.txt
           nohup python3 app.py > output.log 2>&1 &
         EOF

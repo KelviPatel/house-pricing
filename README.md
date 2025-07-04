@@ -16,3 +16,8 @@ ssh -i your-key.pem ubuntu@<EC2_PUBLIC_IP>
 
 sudo apt update
 sudo apt install python3.12-venv
+
+sudo apt update
+sudo apt install python3.12-venv python3-pip
+
+

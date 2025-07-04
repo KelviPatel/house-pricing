@@ -33,18 +33,19 @@ jobs:
           cd ${{ secrets.DEPLOY_PATH }}
 
           # === START: PYTHON VIRTUAL ENVIRONMENT SETUP ===
-          # Check if the virtual environment directory exists. If not, create it.
-          # This makes subsequent deployments faster.
           if [ ! -d "venv" ]; then
             echo "Creating Python virtual environment..."
             python3 -m venv venv
+
+            echo "Manually installing pip into virtualenv..."
+            curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+            ./venv/bin/python get-pip.py
           fi
 
           echo "Activating virtual environment and installing dependencies..."
-          # Instead of `pip3`, we now use the pip from our virtual environment.
-          # This installs packages into venv/lib/pythonX.X/site-packages/ instead of the global scope.
           ./venv/bin/pip install -r requirements.txt
           # === END: PYTHON VIRTUAL ENVIRONMENT SETUP ===
+
 
           # Kill any old running instance of the app.
           # We now target the python executable inside our venv for more accuracy.

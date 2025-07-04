@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 
 app=Flask(__name__)
+
 model=pickle.load(open('regmodel.pkl','rb'))
 scalar=pickle.load(open('scaling.pkl','rb'))
 
@@ -28,7 +29,7 @@ def predict():
     print("final input",final_input)
     output=model.predict(final_input)[0]
     print(output)
-    return render_template("home.html",prediction_txt="the predicted price is {}".format(output))
+    return render_template("home.html",prediction_txt="The price is {}".format(output))
 
 if __name__=="__main__":
     app.run(debug=True)

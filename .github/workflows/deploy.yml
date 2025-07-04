@@ -1,30 +1,63 @@
-name: Deploy to AWS EC2
+# .github/workflows/deploy.yml
+
+name: Deploy Python App to AWS EC2
 
 on:
   push:
     branches:
-      - main  
+      - main  # Trigger deployment on push to the main branch
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v3
+    - name: 1. Checkout Code
+      uses: actions/checkout@v4
 
-    - name: Setup SSH
+    - name: 2. Setup SSH Key
+      # This action securely loads the SSH key from secrets and configures ssh-agent.
+      # It's the standard and most reliable way to handle SSH keys in GitHub Actions.
+      uses: webfactory/ssh-agent@v0.9.0
+      with:
+        ssh-private-key: ${{ secrets.EC2_KEY }}
+
+    - name: 3. Deploy to EC2 and Restart App
+      # This step connects to the EC2 instance and performs the deployment.
       run: |
-        mkdir -p ~/.ssh
-        echo "${{ secrets.EC2_KEY }}" > ~/.ssh/id_rsa
-        chmod 600 ~/.ssh/id_rsa
+        # Add the EC2 host's public key to the runner's known_hosts file
+        # to avoid the interactive "Are you sure you want to continue connecting?" prompt.
         ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
-    - name: Deploy to EC2
-      run: |
-        rsync -avz --exclude '.git' . ${{ secrets.EC2_HOST }}:${{ secrets.DEPLOY_PATH }}
-        ssh ${{ secrets.EC2_HOST }} << 'EOF'
+        # Use rsync to efficiently transfer the application files.
+        # It's faster than scp as it only copies changed files.
+        # The user, host, and path are all from secrets for security and flexibility.
+        rsync -avz --exclude '.git' --exclude '.github' . ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:${{ secrets.DEPLOY_PATH }}
+
+        # SSH into the EC2 instance to run deployment commands.
+        # The 'EOF' heredoc allows us to run a multi-line script on the remote server.
+        # Note: We use "EOF" without quotes to allow ${{ secrets.DEPLOY_PATH }} to be expanded by GitHub Actions.
+        ssh ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} << EOF
+          set -e  # Exit immediately if a command exits with a non-zero status.
+
+          # Navigate to the deployment directory
           cd ${{ secrets.DEPLOY_PATH }}
+
+          # Kill any old running instance of the app to prevent conflicts.
+          # The 'pkill -f' command finds the process by its full command line.
+          # '|| true' ensures that the script doesn't fail if the process isn't found (e.g., on the first deploy).
+          echo "Stopping old application process..."
+          pkill -f 'python3 app.py' || true
+
+          # Install/update Python dependencies
+          echo "Installing dependencies..."
           pip3 install -r requirements.txt
+
+          # Start the application in the background using nohup
+          # This ensures the process keeps running even after the SSH session ends.
+          # Output is redirected to output.log for debugging.
+          echo "Starting new application process..."
           nohup python3 app.py > output.log 2>&1 &
+
+          echo "Deployment successful!"
         EOF

@@ -4,14 +4,14 @@
 
 This project demonstrates an end-to-end machine learning solution for predicting house prices. The model is served via a Flask web application and is automatically deployed to an AWS EC2 instance using a CI/CD pipeline powered by GitHub Actions.
 
-## ✨ Features
+##  Features
 
 *   **Machine Learning Model**: A trained model to predict housing prices.
 *   **Web API**: A simple Flask API to serve predictions.
 *   **Automated CI/CD**: Pushing to the `main` branch automatically triggers a deployment to the AWS EC2 server.
 *   **Reproducible Infrastructure**: Clear, documented steps to provision and configure the server environment.
 
-## 🛠️ Tech Stack
+##  Tech Stack
 
 *   **Backend**: Python, Flask
 *   **ML Stack**: Scikit-learn, Pandas
@@ -21,7 +21,7 @@ This project demonstrates an end-to-end machine learning solution for predicting
 
 ---
 
-## 🚀 Getting Started (Local Setup)
+##  Getting Started (Local Setup)
 
 To run this application on your local machine, follow these steps.
 
@@ -56,7 +56,7 @@ The application will be running at `http://127.0.0.1:5000`.
 
 ---
 
-## ☁️ Deployment to AWS EC2 with CI/CD
+##  Deployment to AWS EC2 with CI/CD
 
 This project is configured for automated deployment to an AWS EC2 instance whenever changes are pushed to the `main` branch. Here’s how to set up the infrastructure and the pipeline.
 

@@ -19,12 +19,12 @@ Open inbound security group ports:
 
 5000 for the Flask app (or whichever port your app runs on)   
 
-ssh -i your-key.pem ubuntu@your-ec2-public-ip
-sudo apt update
-sudo apt install python3-pip -y
-sudo apt install docker.io -y
-sudo systemctl start docker
-sudo systemctl enable docker
+  ssh -i your-key.pem ubuntu@your-ec2-public-ip
+  sudo apt update
+  sudo apt install python3-pip -y
+  sudo apt install docker.io -y
+  sudo systemctl start docker
+  sudo systemctl enable docker
 
 mkdir myapp
 
